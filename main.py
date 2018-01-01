@@ -20,7 +20,6 @@ ser.port = '/dev/cuaU0'
 # ser.port = '/dev/ttyU0'
 
 # http://stackoverflow.com/questions/19317766/how-to-find-first-byte-of-a-serial-stream-with-python
-# czytac do bufora a potem dalej rozbijac na linie
 
 def process_line(line=None):
     if not line:
