@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import time
 import serial
 from reading import Reading
@@ -9,8 +11,6 @@ from reading import Reading
 ser = serial.Serial()
 ser.baudrate = 57600
 ser.timeout = 3
-
-
 ser.parity = serial.PARITY_EVEN
 
 # freebsd:
@@ -24,31 +24,27 @@ ser.port = '/dev/cuaU0'
 
 def process_line(line=None):
     if not line:
-        return
+        return None
 
-    print('"{}"'.format(line))
-    curr_time = line[0:8]
-    curr_date = line[8:20].strip()
-    curr_flow_raw = line[20:30].strip()
-    curr_flow = curr_flow_raw.split('Wenty.=')[1]
-    program_until = line[30:40].strip()
-    displayed_temp = line[40:60].strip()
-    curr_mode = line[60:80].strip()
+    # print("'{}'".format(line))
+    raw_reading = {
+        'curr_time': line[0:8],
+        'curr_date': line[8:20].strip(),
+        'curr_flow_raw': line[20:30].strip(),
+        'curr_flow': line[20:30].strip().split('Wenty.=')[1],
+        'program_until': line[30:40].strip(),
+        'displayed_temp': line[40:60].strip(),
+        'curr_mode': line[60:80].strip()
+        }
 
-    print('time:"{}"\ndate:"{}"\nflow_raw:"{}"\nflow:"{}"\nuntil:"{}"\ntemp:"{}"\nmode:"{}"'
-          ''.format(curr_time,
-                    curr_date, 
-                    curr_flow_raw,
-                    curr_flow,
-                    program_until,
-                    displayed_temp,
-                    curr_mode))
+    return raw_reading
 
 try:
     x = ''
     cnt = 0
     ser.open()
     if ser.is_open:
+        reading = Reading()
 
         # prepare buffer
         while cnt < 3:
@@ -62,17 +58,22 @@ try:
         # read actual lines
         while True:
             y = ser.read(117)
-            print y
+            # print(y)
             line_stripped = y[5:-32]
             if len(line_stripped) < 80:
                 continue
-            process_line(line=line_stripped)
-            time.sleep(0.2)
+            raw = process_line(line=line_stripped)
+            reading.fill_fields(**raw)
+            if reading.is_complete():
+                print("in: {} out: {} ext: {} time: {}"
+                      "".format(reading.inlet_temp,
+                                reading.outlet_temp,
+                                reading.external_temp,
+                                reading.curr_time))
+                # reading.save()
+                reading.clean()
 
-#        while True:
-#            x = ser.read(117)
-#            print x
-#            time.sleep(0.2)
+            time.sleep(0.2)
 
 except Exception as ex:
     print('{}'.format(ex.message))
