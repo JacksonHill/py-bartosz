@@ -3,6 +3,7 @@ from __future__ import print_function
 import time
 import serial
 from reading import Reading
+import config
 
 # line has 117 bytes,
 # payload has 80 bytes
@@ -64,12 +65,13 @@ try:
             raw = process_line(line=line_stripped)
             reading.fill_fields(**raw)
             if reading.is_complete():
-                print("in: {} out: {} ext: {} time: {}"
+                print("in: {} out: {} ext: {} time: {} flow: {}"
                       "".format(reading.inlet_temp,
                                 reading.outlet_temp,
                                 reading.external_temp,
-                                reading.curr_time))
-                # reading.save()
+                                reading.curr_time,
+                                reading.curr_flow))
+                print(reading.save(url=config.INFLUX_WRITE_URL))
                 reading.clean()
 
             time.sleep(0.2)
