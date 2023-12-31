@@ -20,6 +20,9 @@ ser.port = '/dev/cuaU0'
 
 # http://stackoverflow.com/questions/19317766/how-to-find-first-byte-of-a-serial-stream-with-python
 
+START_BUFFER_CHARS = [b'<', b'(', b'>', b'P']
+SPECIAL_START_BUFFER_CHARS = [b'"']
+
 def process_line(line=None):
     if not line:
         return None
@@ -39,6 +42,7 @@ def process_line(line=None):
 
 try:
     x = ''
+    strip_special = False
     cnt = 0
     ser.open()
     if ser.is_open:
@@ -49,17 +53,26 @@ try:
             x = ser.read(1)
             #print (f'prep: {x}')
             #if x == b'<' or x == b'(' or x == b'>' or x == b'P':
-            if x in (b'<', b'(', b'>', b'P'):
+            if x in START_BUFFER_CHARS: 
                 y = ser.read(117)
                 cnt = cnt+1
+                strip_special = False
+            elif x in SPECIAL_START_BUFFER_CHARS:
+                y = ser.read(117)
+                cnt = cnt+1
+                strip_special = True
+
         z = ser.read(12)
 
         # read actual lines
         while True:
             y = ser.read(117)
-            #print(y)
-            line_stripped = y[5:-32]
-            #print (f"line stripped: \n{line_stripped}")
+            #print(f"before strip: \n{y}\n")
+            if not strip_special:
+                line_stripped = y[5:-32]
+            else:
+                line_stripped = y[0:-32]
+            #print (f"line stripped: \n{line_stripped}\n")
             line_stripped = line_stripped.decode('iso8859-2')
 
             if len(line_stripped) < 80:
